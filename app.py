@@ -19,6 +19,8 @@ import seaborn as sns
 
 #ML Packages
 
+import joblib, os
+
 import joblib
 def get_value(val, my_dict):
     for key,value in my_dict.items():
@@ -31,6 +33,10 @@ def get_key(val, my_dict):
     for key,value in my_dict.items():
         if val==key:
             return key
+
+def load_prediction_models(model_file):
+    loaded_model= joblib.load(open(os.path.join(model_file), "rb"))
+    return loaded_model
 
 def main():
     "salary predict with ML"
@@ -188,6 +194,7 @@ def main():
 
         selected_options= [age ,workclass ,fnlwgt ,education ,education_num ,marital_status ,occupation , relationship ,race ,sex ,capital_gain ,capital_loss ,hours_per_week ,native_country]
         vectorized_result= [age ,k_workclass ,fnlwgt ,k_education ,education_num ,k_marital_status ,k_occupation ,k_relationship ,k_race ,k_sex ,k_native_country]
+        sample_data= np.array(vectorized_result).reshape(1,-1)
         st.info(selected_options)
         prettified_result=  {    'age': age,
                                  'workclass': workclass,
@@ -218,6 +225,14 @@ def main():
             #ModelSelection
 
             model_choice= st.selectbox("Model Choice", all_ml_list)
+            prediction_label= {">50k": 0, "<=50k": 1}
+
+            if model_choice == "LR":
+                model_predictor= load_prediction_models("models/salary_logit_model.pkl")
+                prediction= model_predictor.predict(sample_data)
+                st.write(prediction)
+
+
 
 
 
