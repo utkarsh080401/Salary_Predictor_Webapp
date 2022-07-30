@@ -3,10 +3,12 @@
 import streamlit as st
 st.set_option('deprecation.showPyplotGlobalUse', False)
 
+
 #Import EDA packages
 
 import pandas as pd
 import numpy as np
+
 
 #Data Viz Pkgs
 import matplotlib
@@ -18,20 +20,96 @@ import seaborn as sns
 
 
 #ML Packages
-
-import joblib, os
-
 import joblib
+import os
+from PIL import Image
+import datetime
+
+#Storing Data
+import sqlite3
+
+conn = sqlite3.connect('data.db')
+c = conn.cursor()
+
+# def create_table():
+#      c.execute('CREATE TABLE IF NOT EXISTS notestable(author TEXT,title TEXT,message TEXT)')
+#
+#
+# def add_data(author,title,message):
+#      c.execute('INSERT INTO notestable(author,title,message) VALUES (?,?,?)',(author,title,message))
+#      conn.commit()
+#
+#
+# def view_all_notes():
+#     c.execute('SELECT * FROM notestable')
+#     data = c.fetchall()
+#     # for row in data:
+#     # 	print(row)
+#     return data
+class Monitor(object):
+    """docstring for Monitor"""
+    conn = sqlite3.connect('data.db')
+    c = conn.cursor()
+
+    def __init__(self, age=None, workclass=None, fnlwgt=None, education=None, education_num=None, marital_status=None,
+                 occupation=None, relationship=None, race=None, sex=None, capital_gain=None, capital_loss=None,
+                 hours_per_week=None, native_country=None, predicted_class=None, model_class=None, time_of_prediction= None):
+        super(Monitor, self).__init__()
+        self.age = age
+        self.workclass = workclass
+        self.fnlwgt = fnlwgt
+        self.education = education
+        self.education_num = education_num
+        self.marital_status = marital_status
+        self.occupation = occupation
+        self.relationship = relationship
+        self.race = race
+        self.sex = sex
+        self.capital_gain = capital_gain
+        self.capital_loss = capital_loss
+        self.hours_per_week = hours_per_week
+        self.native_country = native_country
+        self.predicted_class = predicted_class
+        self.model_class = model_class
+        self.time_of_prediction = time_of_prediction
+
+
+    def __repr__(self):
+        "Monitor(age = {self.age},workclass = {self.workclass},fnlwgt = {self.fnlwgt},education = {self.education},education_num = {self.education_num},marital_status = {self.marital_status},occupation = {self.occupation},relationship = {self.relationship},race = {self.race},sex = {self.sex},capital_gain = {self.capital_gain},capital_loss = {self.capital_loss},hours_per_week = {self.hours_per_week},native_country = {self.native_country},predicted_class = {self.predicted_class},model_class = {self.model_class}, time_of_prediction= {self.time_of_prediction})".format(
+        self=self)
+
+
+    def create_table(self):
+        self.c.execute('CREATE TABLE IF NOT EXISTS predictiontable(age NUMERIC,workclass NUMERIC,fnlwgtv NUMERIC,education NUMERIC,education_num NUMERIC,marital_status NUMERIC,occupation NUMERIC,relationship NUMERIC,race NUMERIC,sex NUMERIC,capital_gain NUMERIC,capital_loss NUMERIC,hours_per_week NUMERIC,native_country NUMERIC,predicted_class NUMERIC,model_class TEXT, time_of_prediction TEXT)')
+
+
+    def add_data(self):
+        self.c.execute('INSERT INTO predictiontable(age,workclass,fnlwgt,education,education_num,marital_status,occupation,relationship,race,sex,capital_gain, capital_loss, hours_per_week, native_country, predicted_class, model_class, time_of_prediction) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)' , (self.age, self.workclass, self.fnlwgt, self.education, self.education_num, self.marital_status, self.occupation, self.relationship, self.race, self.sex, self.capital_gain, self.capital_loss, self.hours_per_week,
+        self.native_country, self.predicted_class, self.model_class, self.time_of_prediction))
+        self.conn.commit()
+
+
+
+    def view_all_data(self):
+        self.c.execute('SELECT * FROM predictiontable')
+        data = self.c.fetchall()
+        # for row in data:
+        # 	print(row)
+        return data
+
+
+
+
 def get_value(val, my_dict):
     for key,value in my_dict.items():
-        if val==key:
-            return val
+        if val == key:
+            return value
 
 #Get the keys
 
-def get_key(val, my_dict):
-    for key,value in my_dict.items():
-        if val==key:
+def get_key(val,my_dict):
+    for key ,value in my_dict.items():
+        if val == value:
             return key
 
 def load_prediction_models(model_file):
@@ -45,7 +123,8 @@ def main():
     activity= ["eda", "prediction", "metrics"]
     choice= st.sidebar.selectbox("Choose An Activity", activity)
     #Load Data
-    df= pd.read_csv("data/adult_salary.csv")
+    df = pd.read_csv("data/adult_salary.csv")
+
     #EDA
     if choice == 'eda':
         st.subheader("EDA Section")
@@ -91,7 +170,7 @@ def main():
 
         if st.checkbox("Select Columns to Show"):
             all_columns = df.columns.tolist()
-            selected_columns= st.multiselect("Select Columns", all_columns)
+            selected_columns = st.multiselect("Select Columns", all_columns)
             new_df= df[selected_columns]
             st.dataframe(new_df)
 
@@ -146,6 +225,7 @@ def main():
 
         d_sex = {"Female": 0, "Male": 1}
 
+
         d_native_country = {"Canada": 0, "Philippines": 1, "Thailand": 2, "Scotland": 3, "Germany": 4, "Portugal": 5,
                             "India": 6, "China": 7, "Japan": 8, "Peru": 9, "France": 10, "Greece": 11, "Taiwan": 12,
                             "Laos": 13, "Hong": 14, "El-Salvador": 15, "Outlying-US(Guam-USVI-etc)": 16,
@@ -159,29 +239,36 @@ def main():
 
         #ML Aspect User Input
 
+        # RECEIVE USER INPUT
 
-        age= st.slider("Select Age", 17, 90)
-        workclass= st.selectbox("Select Work Class", tuple(d_workclass.keys()))
-        education= st.selectbox("Select Education", tuple(d_education.keys()))
-        education_num= st.slider("Select your Level", 1, 16)
-        fnlwgt= st.number_input("Enter FNLWGT", 1.2285000e+04, 1.484605e+06 )
-        marital_status= st.selectbox("Select Marital Status", tuple(d_marital_status.keys()))
+        age = st.slider("Select Age", 16, 90)
+
+        workclass = st.selectbox("Select Work Class", tuple(d_workclass.keys()))
+        fnlwgt = st.number_input("Enter FNLWGT", 1.228500e+04, 1.484705e+06)
+
+        education = st.selectbox("Select Education", tuple(d_education.keys()))
+        education_num = st.slider("Select Education Level", 1, 16)
+        marital_status = st.selectbox("Select Marital-status", tuple(d_marital_status.keys()))
+
         occupation = st.selectbox("Select Occupation", tuple(d_occupation.keys()))
-        relationship = st.selectbox("Select Relationship Status", tuple(d_relationship.keys()))
+        relationship = st.selectbox("Select Relationship", tuple(d_relationship.keys()))
         race = st.selectbox("Select Race", tuple(d_race.keys()))
-        sex=  st.radio("Select Gender", tuple(d_sex.keys()))
-        capital_gain= st.number_input("Capital Gain", 0, 99999)
-        capital_loss=  st.number_input("Capital Loss", 0, 4356)
-        hours_per_week= st.number_input("Hours Per Week", 1, 99)
-        native_country= st.selectbox("Select Native Country", tuple(d_native_country.keys()))
+
+        sex = st.radio("Select Sex", tuple(d_sex.keys()))
+
+        capital_gain = st.number_input("Capital Gain", 0, 99999)
+
+        capital_loss = st.number_input("Capital Loss", 0, 4356)
+
+        hours_per_week = st.number_input("Hours Per Week ", 0, 99)
+        native_country = st.selectbox("Select Native Country", tuple(d_native_country.keys()))
 
         #User Input
 
-        k_workclass= get_value(workclass, d_workclass)
-        k_education = get_value(education, d_education)
-        k_marital_status = get_value(marital_status, d_marital_status)
+        # GET VALUES FOR EACH INPUT
         k_workclass = get_value(workclass, d_workclass)
         k_education = get_value(education, d_education)
+        k_marital_status = get_value(marital_status, d_marital_status)
         k_occupation = get_value(occupation, d_occupation)
         k_relationship = get_value(relationship, d_relationship)
         k_race = get_value(race, d_race)
@@ -193,10 +280,10 @@ def main():
 
 
         selected_options= [age ,workclass ,fnlwgt ,education ,education_num ,marital_status ,occupation , relationship ,race ,sex ,capital_gain ,capital_loss ,hours_per_week ,native_country]
-        vectorized_result= [age ,k_workclass ,fnlwgt ,k_education ,education_num ,k_marital_status ,k_occupation ,k_relationship ,k_race ,k_sex ,k_native_country]
+        vectorized_result = [age ,k_workclass ,fnlwgt ,k_education ,education_num ,k_marital_status ,k_occupation ,k_relationship ,k_race ,k_sex ,capital_gain ,capital_loss ,hours_per_week ,k_native_country]
         sample_data= np.array(vectorized_result).reshape(1,-1)
         st.info(selected_options)
-        prettified_result=  {    'age': age,
+        prettified_result=  {'age': age,
                                  'workclass': workclass,
                                  'fnlwgt': fnlwgt,
                                  'education': education,
@@ -218,8 +305,8 @@ def main():
         #Make Prediction
 
         st.subheader("Prediction")
-        if st.checkbox("Make Predictiion"):
-            all_ml_list= ["LR", "RANDOMFOREST", "NaiveBayes "]
+        if st.checkbox("Make Predicttion"):
+            all_ml_list= ["LR", "RANDOMFOREST", "NaiveBayes"]
 
 
             #ModelSelection
@@ -228,22 +315,37 @@ def main():
             prediction_label= {">50k": 0, "<=50k": 1}
 
             if model_choice == "LR":
-                model_predictor= load_prediction_models("models/salary_logit_model.pkl")
+                model_predictor= load_prediction_models("model/salary_logit_model.pkl")
                 prediction= model_predictor.predict(sample_data)
-                st.write(prediction)
+                # st.write(prediction)
 
 
+            elif model_choice == "RANDOMFOREST":
+                model_predictor= load_prediction_models("model/salary_rf_model.pkl")
+                prediction= model_predictor.predict(sample_data)
+                # st.write(prediction)
 
+            elif model_choice == "NaiveBayes":
+                model_predictor= load_prediction_models("model/salary_nv_model.pkl")
+                prediction= model_predictor.predict(sample_data)
+                # st.write(prediction)
 
-
-
+            final_result = get_key(prediction, prediction_label)
+            model_class= model_choice
+            time_of_prediction= datetime.datetime.now()
+            monitor = Monitor(age,workclass,fnlwgt,education,education_num,marital_status,occupation,relationship,race,sex,capital_gain,capital_loss,hours_per_week,native_country, final_result, model_class, time_of_prediction)
+            monitor.create_table()
+            monitor.add_data()
+            st.success("Predicted Salary as :: {}".format(final_result))
 
 
     #Metrics
 
-    elif choice== 'metrics':
+    elif choice == 'metrics':
         st.subheader("Metrics  Section")
+        cnx= sqlite3.connect('data.db')
+        mdf= pd.read_sql_query("SELECT * FROM predictiontable", cnx)
+        st.dataframe(mdf)
 
 if __name__== '__main__':
     main()
-
